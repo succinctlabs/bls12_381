@@ -13,7 +13,7 @@ version = "0.8.0"
 edition = "2021"
 
 [package.metadata.docs.rs]
-rustdoc-args = [ "--html-in-header", "katex-header.html" ]
+rustdoc-args = ["--html-in-header", "katex-header.html"]
 
 [dependencies]
 sp1_precompiles = { git = "https://github.com/succinctlabs/sp1.git", package = "sp1-precompiles" }
@@ -70,7 +70,8 @@ optional = true
 default = ["groups", "pairings", "alloc", "bits"]
 bits = ["ff/bits"]
 groups = ["group"]
-pairings = ["groups", "pairing"]
+pairings = ["groups", "pairing", "fast-pairings"]
 alloc = ["group/alloc"]
 experimental = ["digest"]
 nightly = ["subtle/nightly"]
+fast-pairings = []
