@@ -232,6 +232,30 @@ impl Default for Scalar {
 impl zeroize::DefaultIsZeroes for Scalar {}
 
 impl Scalar {
+    pub const CURVE_ORDER: [u64; 7] = [
+        0x3FFFFFF00000001,
+        0x36900BFFF96FFBF,
+        0x180809A1D80553B,
+        0x14CA675F520CCE7,
+        0x73EDA7,
+        0x0,
+        0x0,
+    ];
+
+    pub fn from_curve_order() -> Self {
+        let mut tmp = Self([0, 0, 0, 0]);
+        let mut carry = 0u64;
+
+        for (i, chunk) in Self::CURVE_ORDER.iter().enumerate() {
+            let (lo, hi) = mul_u64(*chunk, R2.0[0]);
+            let (res, new_carry) = adc(tmp.0[i], lo, carry);
+            tmp.0[i] = res;
+            carry = hi.wrapping_add(new_carry);
+        }
+
+        tmp
+    }
+
     /// Returns zero, the additive identity.
     #[inline]
     pub const fn zero() -> Scalar {
