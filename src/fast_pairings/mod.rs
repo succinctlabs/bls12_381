@@ -1,6 +1,6 @@
 use subtle::Choice;
 
-pub mod params;
+pub mod witness;
 
 use crate::{fp::Fp, fp12::Fp12, fp2::Fp2, G1Affine, G2Affine, Scalar, BLS_X, BLS_X_IS_NEGATIVE};
 
