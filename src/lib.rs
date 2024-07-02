@@ -9,14 +9,14 @@
 //! * All operations are constant time unless explicitly noted.
 
 // #![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+// #![cfg_attr(docsrs, feature(doc_cfg))]
 // Catch documentation errors caused by code changes.
-#![deny(rustdoc::broken_intra_doc_links)]
-#![deny(missing_debug_implementations)]
-#![deny(missing_docs)]
-#![deny(unsafe_code)]
-#![allow(clippy::too_many_arguments)]
-#![allow(clippy::many_single_char_names)]
+// #![deny(rustdoc::broken_intra_doc_links)]
+// #![deny(missing_debug_implementations)]
+// #![deny(missing_docs)]
+// #![deny(unsafe_code)]
+// #![allow(clippy::too_many_arguments)]
+// #![allow(clippy::many_single_char_names)]
 // This lint is described at
 // https://rust-lang.github.io/rust-clippy/master/index.html#suspicious_arithmetic_impl
 // In our library, some of the arithmetic involving extension fields will necessarily

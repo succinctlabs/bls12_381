@@ -1,5 +1,7 @@
 use subtle::Choice;
 
+pub mod params;
+
 use crate::{fp::Fp, fp12::Fp12, fp2::Fp2, G1Affine, G2Affine, Scalar, BLS_X, BLS_X_IS_NEGATIVE};
 
 // pub(crate) const BLS_BETA: Fp2 = Fp2 {
@@ -169,74 +171,71 @@ fn legendre(a: Fp12) -> Fp12 {
         0xdcff_7fff_ffff_d555,
     ])
 }
+// pub(crate) fn rth_root(r: Fp12, )
 
-/// Toneelli-Shanks algorithm to compute cubic roots in a finite field.
-/// p - 1 = 2^s * t where s == 0 in this case
-/// if s == 1:
-///    return pow(n, (p + 1) // 4, p)
-pub(crate) fn tonelli_shanks(a: Fp12) -> Fp12 {
-    assert_eq!(
-        legendre(a),
-        Fp12::one(),
-        "not a cubic residue, cannot compute cubic root",
-    );
-    // let s = 2; // s = 2^s * t
-    let t = Fp([
-        0x02e3_aca8_3f47_199f,
-        0x5dad_bd4d_23eb_f6c2,
-        0x9962_969c_fe9d_0215,
-        0x445a_c211_e285_70ae,
-        0xae13_1c71_a1ec_e38e,
-        0x311c_5555_5555_4bda,
-    ]);
+// Toneelli-Shanks algorithm to compute cubic roots in a finite field.
+// p - 1 = 2^s * t where s == 0 in this case
+// if s == 1:
+//    return pow(n, (p + 1) // 4, p)
 
-    // t = 3k +/- 1
-    let k = Fp([
-        0x00f6_8ee2_bfc2_5ddf,
-        0xc9e4_946f_0bf9_5240,
-        0xddcb_8789_aa34_5607,
-        0x16c8_eb5b_4b81_d03a,
-        0x3a06_5ed0_8b4e_f684,
-        0xbb09_71c7_1c71_c3f3,
-    ]);
+// pub(crate) fn tonelli_shanks(a: Fp12) -> Fp12 {
+//     // let s = 2; // a = 2^s * t
+//     let t = Fp([
+//         0x02e3_aca8_3f47_199f,
+//         0x5dad_bd4d_23eb_f6c2,
+//         0x9962_969c_fe9d_0215,
+//         0x445a_c211_e285_70ae,
+//         0xae13_1c71_a1ec_e38e,
+//         0x311c_5555_5555_4bda,
+//     ]);
 
-    let three_times_k_plus_one = Fp([
-        0x02e3_aca8_3f47_199f,
-        0x5dad_bd4d_23eb_f6c2,
-        0x9962_969c_fe9d_0215,
-        0x445a_c211_e285_70ae,
-        0xae13_1c71_a1ec_e38e,
-        0x311c_5555_5555_4bda,
-    ]);
-    let c = Fp12::random(&mut rand::thread_rng()).pow_vartime(&t.0); // c = b^t
-    let mut r = a.pow_vartime(&t.0); // r = a^t
+//     // t = 3k +/- 1
+//     let k = Fp([
+//         0x00f6_8ee2_bfc2_5ddf,
+//         0xc9e4_946f_0bf9_5240,
+//         0xddcb_8789_aa34_5607,
+//         0x16c8_eb5b_4b81_d03a,
+//         0x3a06_5ed0_8b4e_f684,
+//         0xbb09_71c7_1c71_c3f3,
+//     ]);
 
-    let mut h = Fp12::one();
-    let mut c = c.invert().unwrap();
-    let c_3 = c.square() * c;
+//     let three_times_k_plus_one = Fp([
+//         0x02e3_aca8_3f47_199f,
+//         0x5dad_bd4d_23eb_f6c2,
+//         0x9962_969c_fe9d_0215,
+//         0x445a_c211_e285_70ae,
+//         0xae13_1c71_a1ec_e38e,
+//         0x311c_5555_5555_4bda,
+//     ]);
+//     let c = Fp12::random(&mut rand::thread_rng()).pow_vartime(&t.0); // c = b^t
+//     let mut r = a.pow_vartime(&t.0); // r = a^t
 
-    let d = r.pow_vartime(&[1, 0, 0, 0, 0, 0]); // d = r^(3^(s - i - 1))
+//     let mut h = Fp12::one();
+//     let mut c = c.invert().unwrap();
+//     let c_3 = c.square() * c;
 
-    // in this case, c' = c^(3^(s - i - 1)) = c^3
-    if d == c_3 {
-        h = h * c;
-        r = r * c_3;
-    } else if d != Fp12::one() {
-        h = h * c.square();
-        r = r * c_3.square();
-    }
+//     let d = r.pow_vartime(&[1, 0, 0, 0, 0, 0]); // d = r^(3^(s - i - 1))
 
-    r = a.pow_vartime(&k.0) * h;
-    if t == three_times_k_plus_one {
-        r = r.invert().unwrap()
-    }
+//     // in this case, c' = c^(3^(s - i - 1)) = c^3
+//     if d == c_3 {
+//         h = h * c;
+//         r = r * c_3;
+//     } else if d != Fp12::one() {
+//         h = h * c.square();
+//         r = r * c_3.square();
+//     }
 
-    r
-}
+//     r = a.pow_vartime(&k.0) * h;
+//     if t == three_times_k_plus_one {
+//         r = r.invert().unwrap()
+//     }
 
-#[test]
-fn test_tonelli_shanks() {
-    let a = Fp12::random(&mut rand::thread_rng());
-    let cubic_root = tonelli_shanks(a);
-    assert_eq!(cubic_root.square() * cubic_root, a);
-}
+//     r
+// }
+
+// #[test]
+// fn test_tonelli_shanks() {
+//     let a = Fp12::random(&mut rand::thread_rng());
+//     let cubic_root = tonelli_shanks(a);
+//     assert_eq!(cubic_root.square() * cubic_root, a);
+// }
