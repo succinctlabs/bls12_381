@@ -216,7 +216,7 @@ impl Fp12 {
     /// Although this is labeled "vartime", it is only
     /// variable time with respect to the exponent. It
     /// is also not exposed in the public API.
-    pub fn pow_vartime(&self, by: &[u64; 6]) -> Self {
+    pub fn pow_vartime(&self, by: &[u64]) -> Self {
         let mut res = Self::one();
         for e in by.iter().rev() {
             for i in (0..64).rev() {

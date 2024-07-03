@@ -232,11 +232,9 @@ fn miller_loop(p: &G1Affine, q: &G2Affine) -> Fp12 {
 //     r
 // }
 
-/// Modified version of the Tonelli-Shanks algorithm to compute cubic roots in a finite field.
-pub(crate) fn tonelli_shanks(a: Fp12) -> Fp12 {}
-#[test]
-fn test_tonelli_shanks() {
-    let a = Fp12::random(&mut rand::thread_rng());
-    let cubic_root = tonelli_shanks(a);
-    assert_eq!(cubic_root.square() * cubic_root, a);
-}
+// #[test]
+// fn test_tonelli_shanks() {
+//     let a = Fp12::random(&mut rand::thread_rng());
+//     let cubic_root = tonelli_shanks(a);
+//     assert_eq!(cubic_root.square() * cubic_root, a);
+// }
