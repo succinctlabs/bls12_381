@@ -278,6 +278,7 @@ impl G1Affine {
     /// API invariants may be broken.** Please consider using `from_uncompressed()` instead.
     pub fn from_uncompressed_unchecked(bytes: &[u8; 96]) -> CtOption<Self> {
         // Obtain the three flags from the start of the byte sequence
+
         let compression_flag_set = Choice::from((bytes[0] >> 7) & 1);
         let infinity_flag_set = Choice::from((bytes[0] >> 6) & 1);
         let sort_flag_set = Choice::from((bytes[0] >> 5) & 1);
@@ -325,6 +326,7 @@ impl G1Affine {
                 )
             })
         })
+
     }
 
     /// Attempts to deserialize a compressed element. See [`notes::serialization`](crate::notes::serialization)
@@ -332,18 +334,10 @@ impl G1Affine {
     pub fn from_compressed(bytes: &[u8; 48]) -> CtOption<Self> {
         // We already know the point is on the curve because this is established
         // by the y-coordinate recovery procedure in decompress_pubkey().
+        let decompressed = decompress_pubkey(bytes).unwrap();
 
-        println!("cycle-tracker-start: decompress-pubkey-internal");
-        let decompressed = sp1_precompiles::bls12381::decompress_pubkey(bytes).unwrap();
-        println!("cycle-tracker-end: decompress-pubkey-internal");
-
-        println!("cycle-tracker-start: validate-pubkey-internal");
-        let x = Fp::from_bytes(decompressed[0..48].try_into().unwrap());
-        let y = Fp::from_bytes(decompressed[48..96].try_into().unwrap());
-        println!("cycle-tracker-end: validate-pubkey-internal");
-
-        let p = G1Affine::new_unsafe(x.unwrap(), y.unwrap(), Choice::from(0u8));
-        CtOption::new(p, Choice::from(1u8))
+        // Extra checks do not have to be done because because the precompile already does it for us.
+        G1Affine::from_uncompressed_unchecked(&decompressed)
     }
 
     /// Attempts to deserialize an uncompressed element, not checking if the
