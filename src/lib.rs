@@ -7,7 +7,7 @@
 //! * This implementation targets Rust `1.36` or later.
 //! * This implementation does not require the Rust standard library.
 //! * All operations are constant time unless explicitly noted.
-//! 
+
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 // Catch documentation errors caused by code changes.
