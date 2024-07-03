@@ -99,7 +99,7 @@ impl Fp12 {
     }
 
     #[inline]
-    pub fn one() -> Self {
+    pub const fn one() -> Self {
         Fp12 {
             c0: Fp6::one(),
             c1: Fp6::zero(),
