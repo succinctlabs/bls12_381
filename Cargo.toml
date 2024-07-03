@@ -15,6 +15,9 @@ edition = "2021"
 [package.metadata.docs.rs]
 rustdoc-args = [ "--html-in-header", "katex-header.html" ]
 
+[dependencies]
+sp1_precompiles = { git = "https://github.com/succinctlabs/sp1.git", package = "sp1-precompiles" }
+
 [dev-dependencies]
 csv = ">= 1.0, < 1.2" # csv 1.2 has MSRV 1.60
 criterion = "0.3"

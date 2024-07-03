@@ -10,9 +10,10 @@ use group::{
 };
 use rand_core::RngCore;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
+use sp1_precompiles::bls12381::decompress_pubkey;
 #[cfg(feature = "alloc")]
 use group::WnafGroup;
+
 
 use crate::fp::Fp;
 use crate::Scalar;
@@ -330,9 +331,19 @@ impl G1Affine {
     /// for details about how group elements are serialized.
     pub fn from_compressed(bytes: &[u8; 48]) -> CtOption<Self> {
         // We already know the point is on the curve because this is established
-        // by the y-coordinate recovery procedure in from_compressed_unchecked().
+        // by the y-coordinate recovery procedure in decompress_pubkey().
 
-        Self::from_compressed_unchecked(bytes).and_then(|p| CtOption::new(p, p.is_torsion_free()))
+        println!("cycle-tracker-start: decompress-pubkey-internal");
+        let decompressed = sp1_precompiles::bls12381::decompress_pubkey(bytes).unwrap();
+        println!("cycle-tracker-end: decompress-pubkey-internal");
+
+        println!("cycle-tracker-start: validate-pubkey-internal");
+        let x = Fp::from_bytes(decompressed[0..48].try_into().unwrap());
+        let y = Fp::from_bytes(decompressed[48..96].try_into().unwrap());
+        println!("cycle-tracker-end: validate-pubkey-internal");
+
+        let p = G1Affine::new_unsafe(x.unwrap(), y.unwrap(), Choice::from(0u8));
+        CtOption::new(p, Choice::from(1u8))
     }
 
     /// Attempts to deserialize an uncompressed element, not checking if the
