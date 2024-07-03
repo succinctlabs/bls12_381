@@ -160,23 +160,22 @@ fn miller_loop(p: &G1Affine, q: &G2Affine) -> Fp12 {
     f
 }
 
-/// a^((p - 1) / 2)
-fn legendre(a: Fp12) -> Fp12 {
-    a.pow_vartime(&[
-        0x0d00_88f5_1cbf_f34d,
-        0x258d_d3db_21a5_d66b,
-        0xb23b_a5c2_79c2_895f,
-        0xb398_6950_7b58_7b12,
-        0x0f55_ffff_58a9_ffff,
-        0xdcff_7fff_ffff_d555,
-    ])
-}
-// pub(crate) fn rth_root(r: Fp12, )
+// /// a^((p - 1) / 2)
+// fn legendre(a: Fp12) -> Fp12 {
+//     a.pow_vartime(&[
+//         0x0d00_88f5_1cbf_f34d,
+//         0x258d_d3db_21a5_d66b,
+//         0xb23b_a5c2_79c2_895f,
+//         0xb398_6950_7b58_7b12,
+//         0x0f55_ffff_58a9_ffff,
+//         0xdcff_7fff_ffff_d555,
+//     ])
+// }
 
-// Toneelli-Shanks algorithm to compute cubic roots in a finite field.
-// p - 1 = 2^s * t where s == 0 in this case
-// if s == 1:
-//    return pow(n, (p + 1) // 4, p)
+// // Tonelli-Shanks algorithm to compute cubic roots in a finite field.
+// // p - 1 = 2^s * t where s == 0 in this case
+// // if s == 1:
+// //    return pow(n, (p + 1) // 4, p)
 
 // pub(crate) fn tonelli_shanks(a: Fp12) -> Fp12 {
 //     // let s = 2; // a = 2^s * t
@@ -233,9 +232,11 @@ fn legendre(a: Fp12) -> Fp12 {
 //     r
 // }
 
-// #[test]
-// fn test_tonelli_shanks() {
-//     let a = Fp12::random(&mut rand::thread_rng());
-//     let cubic_root = tonelli_shanks(a);
-//     assert_eq!(cubic_root.square() * cubic_root, a);
-// }
+/// Modified version of the Tonelli-Shanks algorithm to compute cubic roots in a finite field.
+pub(crate) fn tonelli_shanks(a: Fp12) -> Fp12 {}
+#[test]
+fn test_tonelli_shanks() {
+    let a = Fp12::random(&mut rand::thread_rng());
+    let cubic_root = tonelli_shanks(a);
+    assert_eq!(cubic_root.square() * cubic_root, a);
+}
