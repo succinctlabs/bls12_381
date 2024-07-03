@@ -14,7 +14,6 @@ use sp1_precompiles::bls12381::decompress_pubkey;
 #[cfg(feature = "alloc")]
 use group::WnafGroup;
 
-
 use crate::fp::Fp;
 use crate::Scalar;
 
@@ -278,7 +277,6 @@ impl G1Affine {
     /// API invariants may be broken.** Please consider using `from_uncompressed()` instead.
     pub fn from_uncompressed_unchecked(bytes: &[u8; 96]) -> CtOption<Self> {
         // Obtain the three flags from the start of the byte sequence
-
         let compression_flag_set = Choice::from((bytes[0] >> 7) & 1);
         let infinity_flag_set = Choice::from((bytes[0] >> 6) & 1);
         let sort_flag_set = Choice::from((bytes[0] >> 5) & 1);
@@ -326,7 +324,6 @@ impl G1Affine {
                 )
             })
         })
-
     }
 
     /// Attempts to deserialize a compressed element. See [`notes::serialization`](crate::notes::serialization)

@@ -232,7 +232,6 @@ impl Default for Scalar {
 impl zeroize::DefaultIsZeroes for Scalar {}
 
 impl Scalar {
-
     /// Returns zero, the additive identity.
     #[inline]
     pub const fn zero() -> Scalar {
