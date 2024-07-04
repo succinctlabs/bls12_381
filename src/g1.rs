@@ -10,7 +10,7 @@ use group::{
 };
 use rand_core::RngCore;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
+use sp1_precompiles::bls12381::decompress_pubkey;
 #[cfg(feature = "alloc")]
 use group::WnafGroup;
 
@@ -330,9 +330,11 @@ impl G1Affine {
     /// for details about how group elements are serialized.
     pub fn from_compressed(bytes: &[u8; 48]) -> CtOption<Self> {
         // We already know the point is on the curve because this is established
-        // by the y-coordinate recovery procedure in from_compressed_unchecked().
+        // by the y-coordinate recovery procedure in decompress_pubkey().
+        let decompressed = decompress_pubkey(bytes).unwrap();
 
-        Self::from_compressed_unchecked(bytes).and_then(|p| CtOption::new(p, p.is_torsion_free()))
+        // Extra checks do not have to be done because because the precompile already does it for us.
+        G1Affine::from_uncompressed_unchecked(&decompressed)
     }
 
     /// Attempts to deserialize an uncompressed element, not checking if the
