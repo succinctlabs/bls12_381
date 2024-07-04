@@ -10,6 +10,8 @@ use group::{
 };
 use rand_core::RngCore;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use crate::hash_to_curve::{ExpandMsgXmd, HashToCurve};
+use sha2;
 
 #[cfg(feature = "alloc")]
 use group::WnafGroup;
@@ -37,6 +39,9 @@ impl Default for G2Affine {
         G2Affine::identity()
     }
 }
+const DST: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
+
+
 
 #[cfg(feature = "zeroize")]
 impl zeroize::DefaultIsZeroes for G2Affine {}
@@ -663,6 +668,11 @@ impl G2Projective {
             y: Fp2::one(),
             z: Fp2::zero(),
         }
+    }
+    
+    /// Hash a message to the curve
+    pub fn hash_to_curve_g2(msg: &[u8]) -> G2Projective {
+        <G2Projective as HashToCurve<ExpandMsgXmd<sha2::Sha256>>>::hash_to_curve(msg, DST)
     }
 
     /// Returns a fixed generator of the group. See [`notes::design`](notes/design/index.html#fixed-generators)
