@@ -17,6 +17,10 @@ rustdoc-args = ["--html-in-header", "katex-header.html"]
 
 [dependencies]
 sp1_precompiles = { git = "https://github.com/succinctlabs/sp1.git", package = "sp1-precompiles" }
+crypto-bigint = "0.5.5"
+rand = "0.8.5"
+num-bigint = "0.4.6"
+num-integer = "0.1.46"
 
 [dev-dependencies]
 csv = ">= 1.0, < 1.2" # csv 1.2 has MSRV 1.60
@@ -36,9 +40,6 @@ name = "hash_to_curve"
 harness = false
 required-features = ["experimental"]
 
-[dependencies]
-crypto-bigint = "0.5.5"
-rand = "0.8.5"
 
 [dependencies.digest]
 version = "0.9"
