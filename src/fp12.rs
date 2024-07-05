@@ -10,6 +10,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use rand_core::RngCore;
 
 /// This represents an element $c_0 + c_1 w$ of $\mathbb{F}_{p^12} = \mathbb{F}_{p^6} / w^2 - v$.
+/// Or equivalently $\mathbb{F}_{p^12} = \mathbb{F} / w^12 - 2w^6 + 2$.
 pub struct Fp12 {
     pub c0: Fp6,
     pub c1: Fp6,
@@ -98,7 +99,7 @@ impl Fp12 {
     }
 
     #[inline]
-    pub fn one() -> Self {
+    pub const fn one() -> Self {
         Fp12 {
             c0: Fp6::one(),
             c1: Fp6::zero(),
@@ -123,6 +124,25 @@ impl Fp12 {
         let c0 = bb;
         let c0 = c0.mul_by_nonresidue();
         let c0 = c0 + aa;
+
+        Fp12 { c0, c1 }
+    }
+
+    pub fn mul_by_034(&self, c0: &Fp2, c3: &Fp2, c4: &Fp2) -> Fp12 {
+        let t0 = Fp6 {
+            c0: self.c0.c0 * c0,
+            c1: self.c0.c1 * c0,
+            c2: self.c0.c2 * c0,
+        };
+        let t1 = self.c1;
+        t1.mul_by_01(c3, c4);
+        let o = c0 + c3;
+        let mut t2 = self.c0 + self.c1;
+        t2.mul_by_01(&o, c4);
+        t2 -= t0;
+        let c1 = t2 - t1;
+        t1.mul_by_nonresidue();
+        let c0 = t0 + t1;
 
         Fp12 { c0, c1 }
     }
@@ -191,6 +211,23 @@ impl Fp12 {
                 c0: self.c0 * t,
                 c1: self.c1 * -t,
             })
+    }
+
+    /// Although this is labeled "vartime", it is only
+    /// variable time with respect to the exponent. It
+    /// is also not exposed in the public API.
+    pub fn pow_vartime(&self, by: &[u64]) -> Self {
+        let mut res = Self::one();
+        for e in by.iter().rev() {
+            for i in (0..64).rev() {
+                res = res.square();
+
+                if ((*e >> i) & 1) == 1 {
+                    res *= self;
+                }
+            }
+        }
+        res
     }
 }
 

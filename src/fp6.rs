@@ -84,7 +84,7 @@ impl ConstantTimeEq for Fp6 {
 
 impl Fp6 {
     #[inline]
-    pub fn zero() -> Self {
+    pub const fn zero() -> Self {
         Fp6 {
             c0: Fp2::zero(),
             c1: Fp2::zero(),
@@ -93,7 +93,7 @@ impl Fp6 {
     }
 
     #[inline]
-    pub fn one() -> Self {
+    pub const fn one() -> Self {
         Fp6 {
             c0: Fp2::one(),
             c1: Fp2::zero(),
