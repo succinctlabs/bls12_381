@@ -1,5 +1,6 @@
 //! This module provides an implementation of the $\mathbb{G}_2$ group of BLS12-381.
 
+use crate::hash_to_curve::{ExpandMsgXmd, HashToCurve};
 use core::borrow::Borrow;
 use core::fmt;
 use core::iter::Sum;
@@ -9,9 +10,8 @@ use group::{
     Curve, Group, GroupEncoding, UncompressedEncoding,
 };
 use rand_core::RngCore;
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-use crate::hash_to_curve::{ExpandMsgXmd, HashToCurve};
 use sha2;
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "alloc")]
 use group::WnafGroup;
@@ -39,9 +39,7 @@ impl Default for G2Affine {
         G2Affine::identity()
     }
 }
-const DST: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
-
-
+const DST: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
 #[cfg(feature = "zeroize")]
 impl zeroize::DefaultIsZeroes for G2Affine {}
@@ -669,7 +667,7 @@ impl G2Projective {
             z: Fp2::zero(),
         }
     }
-    
+
     /// Hash a message to the curve
     pub fn hash_to_curve_g2(msg: &[u8]) -> G2Projective {
         <G2Projective as HashToCurve<ExpandMsgXmd<sha2::Sha256>>>::hash_to_curve(msg, DST)
