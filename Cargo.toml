@@ -16,6 +16,7 @@ edition = "2021"
 rustdoc-args = [ "--html-in-header", "katex-header.html" ]
 
 [dependencies]
+sha2 = "0.9.9"
 sp1_precompiles = { git = "https://github.com/succinctlabs/sp1.git", package = "sp1-precompiles" }
 
 [dev-dependencies]
@@ -67,10 +68,15 @@ default-features = false
 optional = true
 
 [features]
-default = ["groups", "pairings", "alloc", "bits"]
+default = ["groups", "pairings", "alloc", "bits", "experimental"]
 bits = ["ff/bits"]
 groups = ["group"]
 pairings = ["groups", "pairing"]
 alloc = ["group/alloc"]
 experimental = ["digest"]
 nightly = ["subtle/nightly"]
+
+[patch.crates-io]
+sha2-v0-9-9 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", package = "sha2", branch = "patch-sha2-v0.9.9" }
+sha2-v0-10-8 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", package = "sha2", branch = "patch-sha2-v0.10.8" }
+tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", branch = "patch-v2.0.2" }
