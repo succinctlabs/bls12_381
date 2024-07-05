@@ -306,25 +306,13 @@ fn get_pth_root_inverse(x: &Fp12) -> Fp12 {
 }
 
 fn get_order_of_3rd_primitive_root(x: Fp12) -> Result<u32, ()> {
-    let y = x.pow_vartime(&BLS_H3_TIMES_P);
+    let mut y = x.pow_vartime(&BLS_H3_TIMES_P);
 
-    if y == Fp12::one() {
-        return Ok(0);
-    }
-
-    let y = y.pow_vartime(&[3]);
-    if y == Fp12::one() {
-        return Ok(1);
-    }
-
-    let y = y.pow_vartime(&[3]);
-    if y == Fp12::one() {
-        return Ok(2);
-    }
-
-    let y = y.pow_vartime(&[3]);
-    if y == Fp12::one() {
-        return Ok(3);
+    for i in 0..=3 {
+        if y == Fp12::one() {
+            return Ok(i);
+        }
+        y = y.pow_vartime(&BLS_H3_TIMES_P);
     }
 
     Err(())
@@ -368,7 +356,7 @@ pub(crate) fn get_root_and_scaling_factor_bls(x: Fp12) -> Result<(Fp12, Fp12), (
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{multi_miller_loop, G2Affine, Scalar};
+    use crate::{fast_pairings::miller_loop, multi_miller_loop, G2Affine, Scalar};
 
     // r
     const BLS_R: [u64; 5] = [
@@ -401,17 +389,20 @@ mod tests {
         );
         let b4 = G2Affine::identity();
 
-        // let a5 = G1Affine::from(
-        //     G1Affine::generator() * Scalar::from_raw([323, 32, 3, 1]).invert().unwrap().square(),
-        // );
-        // let b5 = G2Affine::from(
-        //     G2Affine::generator() * Scalar::from_raw([4, 2, 2, 9099]).invert().unwrap().square(),
-        // );
+        let a5 = G1Affine::from(
+            G1Affine::generator() * Scalar::from_raw([323, 32, 3, 1]).invert().unwrap().square(),
+        );
+        let b5 = G2Affine::from(
+            G2Affine::generator() * Scalar::from_raw([4, 2, 2, 9099]).invert().unwrap().square(),
+        );
 
-        let a = [a1, a2, a3, a4 /* a5 */];
-        let b = [b1, b2, b3, b4 /* b5 */];
-        for (a, &b) in a.iter().zip(b.iter()) {
-            let x = multi_miller_loop(&[(a, &b.into())]).0;
+        // let a = [a1, a2, a3, a4, a5];
+        // let b = [b1, b2, b3, b4, b5];
+        let a = [a1];
+        let b = [b1];
+        for (a, b) in a.iter().zip(b.iter()) {
+            // let x = multi_miller_loop(&[(a, &b.into())]).0;
+            let x = miller_loop(a, b);
             let x_r = x.pow_vartime(&BLS_R);
             let (root, w_full) = get_root_and_scaling_factor_bls(x_r).unwrap();
 
