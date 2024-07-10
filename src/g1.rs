@@ -435,46 +435,6 @@ impl G1Affine {
         // y^2 - x^3 ?= 4
         (self.y.square() - (self.x.square() * self.x)).ct_eq(&B) | self.infinity
     }
-
-    #[cfg(target_os = "zkvm")]
-    /// Doubles this point.
-    pub fn double(&self) -> G1Affine {
-        if self.infinity.unwrap_u8() != 0 {
-            return *self;
-        }
-        unsafe {
-            // let mut p = self.
-            let mut p = transmute::<[[u64; 6]; 2], [u32; 24]>([self.x.0, self.y.0]);
-            syscall_bls12381_double(p.as_mut_ptr());
-            let p = transmute::<[u32; 24], [[u64; 6]; 2]>(p);
-            G1Affine {
-                x: Fp(p[0]),
-                y: Fp(p[1]),
-                infinity: Choice::from(1),
-            }
-        }
-    }
-
-    #[cfg(target_os = "zkvm")]
-    /// Adds a G1Affine element to this element.
-    fn add(&self, p: &G1Affine) -> G1Affine {
-        if self.infinity.unwrap_u8() != 0 {
-            return *p;
-        } else if p.infinity.unwrap_u8() != 0 {
-            return *self;
-        }
-        unsafe {
-            let mut p1 = transmute::<[[u64; 6]; 2], [u32; 24]>([self.x.0, self.y.0]);
-            let mut p2 = transmute::<[[u64; 6]; 2], [u32; 24]>([p.x.0, p.y.0]);
-            syscall_bls12381_add(p1.as_mut_ptr(), p2.as_mut_ptr());
-            let p1 = transmute::<[u32; 24], [[u64; 6]; 2]>(p1);
-            G1Affine {
-                x: Fp(p1[0]),
-                y: Fp(p1[1]),
-                infinity: Choice::from(1),
-            }
-        }
-    }
 }
 
 /// A nontrivial third root of unity in Fp
