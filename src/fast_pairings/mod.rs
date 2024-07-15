@@ -1,4 +1,7 @@
+use std::ops::Neg;
+
 use subtle::Choice;
+use witness::get_root_and_scaling_factor_bls;
 
 pub mod witness;
 
@@ -82,16 +85,16 @@ fn line_evaluation(f: &mut Fp12, lambda: Fp2, p1: &G1Affine, t_x: Fp2, t_y: Fp2)
     f.mul_by_034(&Fp2::one(), &c1, &c3);
 }
 
-fn add_eval(f: &mut Fp12, acc: &mut G2Affine, p2: &G2Affine, p1: &G1Affine, neg: bool) {
+fn add_eval(f: &mut Fp12, acc: &mut G2Affine, p2: &G2Affine, p1: &G1Affine) {
     let t_x = (*acc).x;
     let t_y = (*acc).y;
-    let lambda = add(acc, p2, neg);
+    let lambda = add(acc, p2);
 
     line_evaluation(f, lambda, p1, t_x, t_y);
 }
 
-pub(crate) fn add(acc: &mut G2Affine, p2: &G2Affine, neg: bool) -> Fp2 {
-    let t0 = if neg { acc.y + p2.y } else { acc.y - p2.y };
+pub(crate) fn add(acc: &mut G2Affine, p2: &G2Affine) -> Fp2 {
+    let t0 = acc.y + p2.y;
     let t1 = (acc.x - p2.x).invert().unwrap();
     let lambda = t0 * t1;
     let x3 = lambda.square() - acc.x - p2.x;
@@ -125,6 +128,9 @@ pub(crate) fn double(acc: &mut G2Affine) -> Fp2 {
 
 /// Perform the Miller loop.
 fn miller_loop(p: &G1Affine, q: &G2Affine) -> Fp12 {
+    assert!(p.is_identity().unwrap_u8() == 0);
+    assert!(q.is_identity().unwrap_u8() == 0);
+
     let mut f = Fp12::one();
     let mut acc = (*q).clone();
 
@@ -133,20 +139,10 @@ fn miller_loop(p: &G1Affine, q: &G2Affine) -> Fp12 {
         double_eval(&mut f, &mut acc, p);
 
         if naf.pow(2) == 1 {
-            add_eval(&mut f, &mut acc, q, p, *naf == -1);
+            let _p = if *naf == 1 { *p } else { -p };
+            add_eval(&mut f, &mut acc, q, &_p);
         }
     });
-
-    let x = if BLS_X_IS_NEGATIVE {
-        -Scalar::from(BLS_X)
-    } else {
-        Scalar::from(BLS_X)
-    };
-
-    assert_eq!(
-        acc,
-        (q * Scalar::from(Scalar::from(6) * x + Scalar::from(2))).into()
-    );
 
     FROBENIUS_COEFFS.iter().for_each(|frob| {
         let _q = G2Affine {
@@ -154,7 +150,41 @@ fn miller_loop(p: &G1Affine, q: &G2Affine) -> Fp12 {
             y: q.y * frob,
             infinity: Choice::from(0),
         };
-        add_eval(&mut f, &mut acc, &_q, &p, false)
+        add_eval(&mut f, &mut acc, &_q, &p)
+    });
+
+    f
+}
+
+fn multi_miller_loop(px: &[G1Affine], qx: &[G2Affine]) -> Fp12 {
+    let terms = px.iter().zip(qx.iter()).collect::<Vec<_>>();
+
+    let mut f = Fp12::one();
+    let mut acc = qx.to_vec();
+
+    SIX_U_PLUS_2_NAF.iter().enumerate().for_each(|(i, naf)| {
+        (i != 0).then(|| f = f.square());
+        terms.iter().zip(acc.iter_mut()).for_each(|((p, _), q)| {
+            double_eval(&mut f, q, p);
+        });
+
+        if naf.pow(2) == 1 {
+            terms.iter().zip(acc.iter_mut()).for_each(|((&g1, &q), r)| {
+                let _p = if *naf == 1 { q } else { -q };
+                add_eval(&mut f, r, &q, &g1);
+            });
+        }
+    });
+
+    terms.iter().zip(acc.iter_mut()).for_each(|((p, q), acc)| {
+        FROBENIUS_COEFFS.iter().for_each(|frob| {
+            let _q = G2Affine {
+                x: q.x * frob,
+                y: q.y * frob,
+                infinity: Choice::from(0),
+            };
+            add_eval(&mut f, acc, &_q, &p)
+        });
     });
 
     f

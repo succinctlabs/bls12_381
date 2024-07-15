@@ -369,8 +369,8 @@ mod tests {
 
     #[test]
     fn test_r_residue_test() {
-        let a1 = G1Affine::identity();
-        let b1 = G2Affine::generator();
+        // let a1 = G1Affine::identity();
+        // let b1 = G2Affine::generator();
 
         let a2 = G1Affine::from(
             G1Affine::generator() * Scalar::from_raw([1, 2, 3, 4]).invert().unwrap().square(),
@@ -379,15 +379,15 @@ mod tests {
             G2Affine::generator() * Scalar::from_raw([4, 2, 2, 4]).invert().unwrap().square(),
         );
 
-        let a3 = G1Affine::identity();
-        let b3 = G2Affine::from(
-            G2Affine::generator() * Scalar::from_raw([9, 2, 2, 4]).invert().unwrap().square(),
-        );
+        // let a3 = G1Affine::identity();
+        // let b3 = G2Affine::from(
+        //     G2Affine::generator() * Scalar::from_raw([9, 2, 2, 4]).invert().unwrap().square(),
+        // );
 
-        let a4 = G1Affine::from(
-            G1Affine::generator() * Scalar::from_raw([5, 5, 5, 5]).invert().unwrap().square(),
-        );
-        let b4 = G2Affine::identity();
+        // let a4 = G1Affine::from(
+        //     G1Affine::generator() * Scalar::from_raw([5, 5, 5, 5]).invert().unwrap().square(),
+        // );
+        // let b4 = G2Affine::identity();
 
         let a5 = G1Affine::from(
             G1Affine::generator() * Scalar::from_raw([323, 32, 3, 1]).invert().unwrap().square(),
@@ -396,10 +396,11 @@ mod tests {
             G2Affine::generator() * Scalar::from_raw([4, 2, 2, 9099]).invert().unwrap().square(),
         );
 
-        // let a = [a1, a2, a3, a4, a5];
-        // let b = [b1, b2, b3, b4, b5];
-        let a = [a1];
-        let b = [b1];
+        // let a = [a1, a2, a3, a5];
+        // let b = [b1, b2, b3, b5];
+        let a = [a2, a5];
+        let b = [b2, b5];
+
         for (a, b) in a.iter().zip(b.iter()) {
             // let x = multi_miller_loop(&[(a, &b.into())]).0;
             let x = miller_loop(a, b);
