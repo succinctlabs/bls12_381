@@ -173,6 +173,7 @@ impl Fp12 {
     }
 
     #[inline]
+    #[cfg(not(target_os = "zkvm"))]
     pub fn square(&self) -> Self {
         let ab = self.c0 * self.c1;
         let c0c1 = self.c0 + self.c1;
@@ -184,6 +185,11 @@ impl Fp12 {
         let c0 = c0 - ab.mul_by_nonresidue();
 
         Fp12 { c0, c1 }
+    }
+
+    #[cfg(target_os = "zkvm")]
+    pub fn square(&self) -> Self {
+        self * self
     }
 
     pub fn invert(&self) -> CtOption<Self> {
