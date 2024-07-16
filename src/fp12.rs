@@ -4,9 +4,14 @@ use crate::fp6::*;
 
 use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use sp1_precompiles::sys_fp12_bigint;
-use std::mem::transmute;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "zkvm")] {
+        use sp1_zkvm::syscalls::sys_fp12_bigint;
+        use core::mem::transmute;
+    }
+}
 
 #[cfg(feature = "pairings")]
 use rand_core::RngCore;

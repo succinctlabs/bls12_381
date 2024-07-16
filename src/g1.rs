@@ -3,8 +3,6 @@
 use core::borrow::Borrow;
 use core::fmt;
 use core::iter::Sum;
-#[cfg(target_os = "zkvm")]
-use core::mem::transmute;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use group::{
     prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
@@ -19,8 +17,12 @@ use group::WnafGroup;
 use crate::fp::Fp;
 use crate::Scalar;
 
-#[cfg(target_os = "zkvm")]
-use sp1_precompiles::{syscall_bls12381_add, syscall_bls12381_double};
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "zkvm")] {
+        use sp1_zkvm::syscalls::{syscall_bls12381_add, syscall_bls12381_double};
+        use core::mem::transmute;
+    }
+}
 
 /// This is an element of $\mathbb{G}_1$ represented in the affine coordinate space.
 /// It is ideal to keep elements in this representation to reduce memory usage and

@@ -33,8 +33,9 @@ name = "hash_to_curve"
 harness = false
 required-features = ["experimental"]
 
-[dependencies]
-num-bigint = "0.4.6"
+
+[dependencies.cfg-if]
+version = "1.0"
 
 [dependencies.digest]
 version = "0.9"
@@ -49,9 +50,12 @@ version = "0.13"
 default-features = false
 optional = true
 
-[dependencies.sp1-precompiles]
+[dependencies.sp1-zkvm]
 # git = "https://github.com/succinctlabs/sp1.git"
-path = "../sp1/zkvm/precompiles"
+path = "../sp1/zkvm/entrypoint"
+
+[dependencies.num-bigint]
+version = "0.4.6"
 
 [dependencies.pairing]
 version = "0.23"

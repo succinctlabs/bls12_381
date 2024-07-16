@@ -1,11 +1,16 @@
 //! This module provides an implementation of the BLS12-381 base field `GF(p)`
 //! where `p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab`
 use core::fmt;
-use core::mem::transmute;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use rand_core::RngCore;
-use sp1_precompiles::{sys_fp_bigint, syscall_fp384_mulmod};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "zkvm")] {
+        use sp1_zkvm::syscalls::sys_fp_bigint;
+        use core::mem::transmute;
+    }
+}
 
 use crate::util::{adc, mac, sbb};
 
