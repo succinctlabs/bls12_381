@@ -4,6 +4,8 @@ use crate::fp6::*;
 
 use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use sp1_precompiles::sys_fp12_bigint;
+use std::mem::transmute;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "pairings")]
@@ -198,6 +200,7 @@ impl<'a, 'b> Mul<&'b Fp12> for &'a Fp12 {
     type Output = Fp12;
 
     #[inline]
+    #[cfg(not(target_os = "zkvm"))]
     fn mul(self, other: &'b Fp12) -> Self::Output {
         let aa = self.c0 * other.c0;
         let bb = self.c1 * other.c1;
@@ -210,6 +213,19 @@ impl<'a, 'b> Mul<&'b Fp12> for &'a Fp12 {
         let c0 = c0 + aa;
 
         Fp12 { c0, c1 }
+    }
+
+    #[cfg(target_os = "zkvm")]
+    fn mul(self, other: &Fp12) -> Fp12 {
+        unsafe {
+            let a: [u32; 144] = transmute::<Fp12, [u32; 144]>(*self);
+            let b: [u32; 144] = transmute::<Fp12, [u32; 144]>(*other);
+            let mut result = [0u32; 144];
+
+            sys_fp12_bigint(&mut result, &a, &b);
+
+            transmute::<[u32; 144], Fp12>(result)
+        }
     }
 }
 
