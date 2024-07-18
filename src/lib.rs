@@ -44,7 +44,10 @@ pub mod notes {
     pub mod serialization;
 }
 
+
 mod scalar;
+/// Module containing various type definitions for compatibility with milagro_bls in SP1
+pub mod types;
 
 pub use scalar::Scalar;
 
