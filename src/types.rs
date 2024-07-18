@@ -59,6 +59,7 @@ mod types {
         /// PublicKeys must all be verified via Proof of Possession before running this function.
         /// https://tools.ietf.org/html/draft-irtf-cfrg-bls-signature-02#section-3.3.4
         pub fn fast_aggregate_verify(&self, msg: &[u8], public_keys: &[&PublicKey]) -> bool {
+            println!("bls12_381");
             // Require at least one PublicKey
             if public_keys.is_empty() {
                 return false;
