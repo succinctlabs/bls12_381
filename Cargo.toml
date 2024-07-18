@@ -17,7 +17,7 @@ rustdoc-args = [ "--html-in-header", "katex-header.html" ]
 
 [dependencies]
 sha2 = "0.9.9"
-sp1_precompiles = { git = "https://github.com/succinctlabs/sp1.git", package = "sp1-precompiles", tag="v1.0.8-testnet" }
+sp1_precompiles = { git = "https://github.com/succinctlabs/sp1.git", package = "sp1-lib", branch = "chris/v1.0.9-testnet", features=["bls12381"] }
 
 [dev-dependencies]
 csv = ">= 1.0, < 1.2" # csv 1.2 has MSRV 1.60
