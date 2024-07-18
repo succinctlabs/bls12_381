@@ -75,7 +75,7 @@ impl ConditionallySelectable for Fp {
 }
 
 /// p = 4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787
-const MODULUS: [u64; 6] = [
+pub(crate) const MODULUS: [u64; 6] = [
     0xb9fe_ffff_ffff_aaab,
     0x1eab_fffe_b153_ffff,
     0x6730_d2a0_f6b0_f624,
@@ -119,7 +119,8 @@ const R3: Fp = Fp([
 
 // 0x14fec701e8fb0ce9ed5e64273c4f538b1797ab1458a88de9343ea97914956dc87fe11274d898fafbf4d38259380b4820
 // R^{-1} mod p
-const R_INV: [u64; 6] = [
+#[cfg(target_os = "zkvm")]
+pub(crate) const R_INV: [u64; 6] = [
     0xf4d38259380b4820,
     0x7fe11274d898fafb,
     0x343ea97914956dc8,
