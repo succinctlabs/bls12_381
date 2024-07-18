@@ -50,7 +50,7 @@ mod scalar;
 pub mod types;
 
 pub use scalar::Scalar;
-pub use crate::types::{PublicKey, AggregateSignature};
+pub use types::{PublicKey, AggregateSignature};
 #[cfg(feature = "groups")]
 pub mod fp;
 #[cfg(feature = "groups")]
