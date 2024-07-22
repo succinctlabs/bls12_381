@@ -1,5 +1,6 @@
 //! This module provides an implementation of the BLS12-381 base field `GF(p)`
 //! where `p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab`
+use cfg_if::cfg_if;
 use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use rand_core::RngCore;
@@ -7,8 +8,8 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 cfg_if::cfg_if! {
     if #[cfg(target_os = "zkvm")] {
-        use sp1_zkvm::syscalls::sys_fp_bigint;
         use core::mem::transmute;
+        use sp1_zkvm::syscalls::{bls12381_sys_bigint, syscall_bls12381_fp_mulmod};
     }
 }
 
@@ -174,8 +175,38 @@ impl<'a, 'b> Mul<&'b Fp> for &'a Fp {
     }
 }
 
+cfg_if::cfg_if! {
+    if #[cfg(not(target_os = "zkvm"))] {
+        impl_binops_multiplicative!(Fp, Fp);
+    }
+    else {
+        impl_binops_multiplicative_mixed!(Fp, Fp, Fp);
+        impl MulAssign<Fp> for Fp {
+            #[inline]
+            fn mul_assign(&mut self, rhs: Fp) {
+                unsafe {
+                    let mut lhs = transmute::<[u64; 6], [u32; 12]>(self.0);
+                    let rhs = transmute::<[u64; 6], [u32; 12]>(rhs.0);
+                    let r_inv = transmute::<&[u64; 6], &[u32; 12]>(&R_INV);
+
+                    syscall_bls12381_fp_mulmod(lhs.as_mut_ptr(), rhs.as_ptr());
+                    syscall_bls12381_fp_mulmod(lhs.as_mut_ptr(), r_inv.as_ptr());
+
+                    *self = Fp(transmute::<[u32; 12], [u64; 6]>(lhs));
+                }
+            }
+        }
+
+        impl<'b> MulAssign<&'b Fp> for Fp{
+            #[inline]
+            fn mul_assign(&mut self, rhs: &'b Fp) {
+                *self = &*self * rhs;
+            }
+        }
+    }
+}
+
 impl_binops_additive!(Fp, Fp);
-impl_binops_multiplicative!(Fp, Fp);
 
 impl Fp {
     /// Builds an element of `Fp` from little-endian limbs.
@@ -646,13 +677,12 @@ impl Fp {
     pub fn mul(&self, rhs: &Fp) -> Fp {
         let mut result: [u32; 12] = [0; 12];
         unsafe {
-            let modulus = transmute::<&[u64; 6], &[u32; 12]>(&MODULUS);
             let r_inv = transmute::<&[u64; 6], &[u32; 12]>(&R_INV);
 
             let lhs = transmute::<&[u64; 6], &[u32; 12]>(&self.0);
             let rhs = transmute::<&[u64; 6], &[u32; 12]>(&rhs.0);
-            sys_fp_bigint(&mut result, 0, lhs, rhs, modulus);
-            sys_fp_bigint(&mut result, 0, &result, r_inv, modulus);
+            bls12381_sys_bigint(&mut result, 0, lhs, rhs);
+            bls12381_sys_bigint(&mut result, 0, &result, r_inv);
             Fp::new_unsafe(*transmute::<&mut [u32; 12], &mut [u64; 6]>(&mut result))
         }
     }

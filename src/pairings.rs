@@ -139,7 +139,8 @@ impl MillerLoopResult {
             .frobenius_map()
             .frobenius_map()
             .frobenius_map();
-        Gt(f.invert()
+        let out = Gt(f
+            .invert()
             .map(|mut t1| {
                 let mut t2 = t0 * t1;
                 t1 = t2;
@@ -172,7 +173,8 @@ impl MillerLoopResult {
             // We unwrap() because `MillerLoopResult` can only be constructed
             // by a function within this crate, and we uphold the invariant
             // that the enclosed value is nonzero.
-            .unwrap())
+            .unwrap());
+        out
     }
 }
 
@@ -643,19 +645,14 @@ pub fn pairing(p: &G1Affine, q: &G2Affine) -> Gt {
         p,
     };
 
-    println!("cycle-tracker-start: miller-loop");
     let tmp = miller_loop(&mut adder);
     let tmp = MillerLoopResult(Fp12::conditional_select(
         &tmp,
         &Fp12::one(),
         either_identity,
     ));
-    println!("cycle-tracker-end: miller-loop");
 
-    println!("cycle-tracker-start: final-exp");
-    let out = tmp.final_exponentiation();
-    println!("cycle-tracker-end: final-exp");
-    out
+    tmp.final_exponentiation()
 }
 
 trait MillerLoopDriver {

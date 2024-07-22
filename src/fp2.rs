@@ -227,10 +227,13 @@ impl Fp2 {
         //
         // Each of these is a "sum of products", which we can compute efficiently.
 
-        Fp2 {
+        println!("cycle-tracker-start: Fp2::mul");
+        let out = Fp2 {
             c0: Fp::sum_of_products([self.c0, -self.c1], [rhs.c0, rhs.c1]),
             c1: Fp::sum_of_products([self.c0, self.c1], [rhs.c1, rhs.c0]),
-        }
+        };
+        println!("cycle-tracker-end: Fp2::mul");
+        out
     }
     #[cfg(target_os = "zkvm")]
     /// Multiplies this element by another element.

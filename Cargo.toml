@@ -51,8 +51,9 @@ default-features = false
 optional = true
 
 [dependencies.sp1-zkvm]
-git = "https://github.com/succinctlabs/sp1.git"
-branch = "bhargav/fp-precompile"
+# git = "https://github.com/succinctlabs/sp1.git"
+# branch = "bhargav/fp-precompile"
+path = "../sp1/zkvm/entrypoint"
 
 [dependencies.num-bigint]
 version = "0.4.6"

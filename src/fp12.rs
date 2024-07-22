@@ -6,13 +6,6 @@ use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-cfg_if::cfg_if! {
-    if #[cfg(target_os = "zkvm")] {
-        use core::mem::transmute;
-        use sp1_zkvm::syscalls::{sys_fp12_bigint, sys_fp_bigint};
-    }
-}
-
 #[cfg(feature = "pairings")]
 use rand_core::RngCore;
 
@@ -178,7 +171,6 @@ impl Fp12 {
     }
 
     #[inline]
-    #[cfg(not(target_os = "zkvm"))]
     pub fn square(&self) -> Self {
         let ab = self.c0 * self.c1;
         let c0c1 = self.c0 + self.c1;
@@ -190,11 +182,6 @@ impl Fp12 {
         let c0 = c0 - ab.mul_by_nonresidue();
 
         Fp12 { c0, c1 }
-    }
-
-    #[cfg(target_os = "zkvm")]
-    pub fn square(&self) -> Self {
-        self * self
     }
 
     pub fn invert(&self) -> CtOption<Self> {
@@ -211,7 +198,6 @@ impl<'a, 'b> Mul<&'b Fp12> for &'a Fp12 {
     type Output = Fp12;
 
     #[inline]
-    #[cfg(not(target_os = "zkvm"))]
     fn mul(self, other: &'b Fp12) -> Self::Output {
         let aa = self.c0 * other.c0;
         let bb = self.c1 * other.c1;
@@ -224,28 +210,6 @@ impl<'a, 'b> Mul<&'b Fp12> for &'a Fp12 {
         let c0 = c0 + aa;
 
         Fp12 { c0, c1 }
-    }
-
-    #[cfg(target_os = "zkvm")]
-    fn mul(self, other: &Fp12) -> Fp12 {
-        unsafe {
-            let a: [u32; 144] = transmute::<Fp12, [u32; 144]>(*self);
-            let b: [u32; 144] = transmute::<Fp12, [u32; 144]>(*other);
-            let r_inv = transmute::<&[u64; 6], &[u32; 12]>(&R_INV);
-            let modulus = transmute::<&[u64; 6], &[u32; 12]>(&MODULUS);
-            let mut result = [0u32; 144];
-            sys_fp12_bigint(&mut result, &a, &b);
-
-            let mut monty: [[u32; 12]; 12] = [[0u32; 12]; 12];
-            monty
-                .iter_mut()
-                .zip(result.chunks_exact(12))
-                .into_iter()
-                .for_each(|(row, result)| {
-                    sys_fp_bigint(row, 0, r_inv, &result.try_into().unwrap(), modulus);
-                });
-            transmute(monty)
-        }
     }
 }
 
