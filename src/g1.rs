@@ -17,6 +17,13 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use crate::fp::Fp;
 use crate::Scalar;
 
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "zkvm")] {
+        use sp1_zkvm::syscalls::{syscall_bls12381_add, syscall_bls12381_double};
+        use core::mem::transmute;
+    }
+}
+
 /// This is an element of $\mathbb{G}_1$ represented in the affine coordinate space.
 /// It is ideal to keep elements in this representation to reduce memory usage and
 /// improve performance through the use of mixed curve model arithmetic.
@@ -119,6 +126,16 @@ impl Neg for G1Affine {
     #[inline]
     fn neg(self) -> G1Affine {
         -&self
+    }
+}
+
+#[cfg(target_os = "zkvm")]
+impl<'a> Add for &'a G1Affine {
+    type Output = G1Affine;
+
+    #[inline]
+    fn add(self, rhs: &'a G1Affine) -> G1Affine {
+        self.add(rhs)
     }
 }
 

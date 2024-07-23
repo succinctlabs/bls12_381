@@ -139,7 +139,8 @@ impl MillerLoopResult {
             .frobenius_map()
             .frobenius_map()
             .frobenius_map();
-        Gt(f.invert()
+        let out = Gt(f
+            .invert()
             .map(|mut t1| {
                 let mut t2 = t0 * t1;
                 t1 = t2;
@@ -172,7 +173,8 @@ impl MillerLoopResult {
             // We unwrap() because `MillerLoopResult` can only be constructed
             // by a function within this crate, and we uphold the invariant
             // that the enclosed value is nonzero.
-            .unwrap())
+            .unwrap());
+        out
     }
 }
 
@@ -649,6 +651,7 @@ pub fn pairing(p: &G1Affine, q: &G2Affine) -> Gt {
         &Fp12::one(),
         either_identity,
     ));
+
     tmp.final_exponentiation()
 }
 

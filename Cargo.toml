@@ -13,7 +13,7 @@ version = "0.8.0"
 edition = "2021"
 
 [package.metadata.docs.rs]
-rustdoc-args = [ "--html-in-header", "katex-header.html" ]
+rustdoc-args = ["--html-in-header", "katex-header.html"]
 
 [dependencies]
 eyre = "0.6.12"
@@ -38,6 +38,10 @@ name = "hash_to_curve"
 harness = false
 required-features = ["experimental"]
 
+
+[dependencies.cfg-if]
+version = "1.0"
+
 [dependencies.digest]
 version = "0.9"
 optional = true
@@ -50,6 +54,14 @@ default-features = false
 version = "0.13"
 default-features = false
 optional = true
+
+[dependencies.sp1-zkvm]
+# git = "https://github.com/succinctlabs/sp1.git"
+# branch = "bhargav/fp-precompile"
+path = "../sp1/zkvm/entrypoint"
+
+[dependencies.num-bigint]
+version = "0.4.6"
 
 [dependencies.pairing]
 version = "0.23"

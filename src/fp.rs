@@ -1,9 +1,17 @@
 //! This module provides an implementation of the BLS12-381 base field `GF(p)`
 //! where `p = 0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab`
+use cfg_if::cfg_if;
 use core::fmt;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use rand_core::RngCore;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "zkvm")] {
+        use core::mem::transmute;
+        use sp1_zkvm::syscalls::{bls12381_sys_bigint, syscall_bls12381_fp_mulmod};
+    }
+}
 
 use crate::util::{adc, mac, sbb};
 
@@ -68,7 +76,7 @@ impl ConditionallySelectable for Fp {
 }
 
 /// p = 4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787
-const MODULUS: [u64; 6] = [
+pub(crate) const MODULUS: [u64; 6] = [
     0xb9fe_ffff_ffff_aaab,
     0x1eab_fffe_b153_ffff,
     0x6730_d2a0_f6b0_f624,
@@ -109,6 +117,18 @@ const R3: Fp = Fp([
     0x2512_d435_6572_4728,
     0x0aa6_3460_9175_5d4d,
 ]);
+
+// 0x14fec701e8fb0ce9ed5e64273c4f538b1797ab1458a88de9343ea97914956dc87fe11274d898fafbf4d38259380b4820
+// R^{-1} mod p
+#[cfg(target_os = "zkvm")]
+pub(crate) const R_INV: [u64; 6] = [
+    0xf4d38259380b4820,
+    0x7fe11274d898fafb,
+    0x343ea97914956dc8,
+    0x1797ab1458a88de9,
+    0xed5e64273c4f538b,
+    0x14fec701e8fb0ce9,
+];
 
 impl<'a> Neg for &'a Fp {
     type Output = Fp;
@@ -155,15 +175,40 @@ impl<'a, 'b> Mul<&'b Fp> for &'a Fp {
     }
 }
 
+cfg_if::cfg_if! {
+    if #[cfg(not(target_os = "zkvm"))] {
+        impl_binops_multiplicative!(Fp, Fp);
+    }
+    else {
+        impl_binops_multiplicative_mixed!(Fp, Fp, Fp);
+        impl MulAssign<Fp> for Fp {
+            #[inline]
+            fn mul_assign(&mut self, rhs: Fp) {
+                unsafe {
+                    let mut lhs = transmute::<[u64; 6], [u32; 12]>(self.0);
+                    let rhs = transmute::<[u64; 6], [u32; 12]>(rhs.0);
+                    let r_inv = transmute::<&[u64; 6], &[u32; 12]>(&R_INV);
+
+                    syscall_bls12381_fp_mulmod(lhs.as_mut_ptr(), rhs.as_ptr());
+                    syscall_bls12381_fp_mulmod(lhs.as_mut_ptr(), r_inv.as_ptr());
+
+                    *self = Fp(transmute::<[u32; 12], [u64; 6]>(lhs));
+                }
+            }
+        }
+
+        impl<'b> MulAssign<&'b Fp> for Fp{
+            #[inline]
+            fn mul_assign(&mut self, rhs: &'b Fp) {
+                *self = &*self * rhs;
+            }
+        }
+    }
+}
+
 impl_binops_additive!(Fp, Fp);
-impl_binops_multiplicative!(Fp, Fp);
 
 impl Fp {
-    /// Builds an element of `Fp` from little-endian limbs.
-    pub fn new_unsafe(limbs: [u64; 6]) -> Self {
-        Fp(limbs)
-    }
-
     /// Returns zero, the additive identity.
     #[inline]
     pub const fn zero() -> Fp {
@@ -388,7 +433,8 @@ impl Fp {
 
     #[inline]
     /// Add two field elements together.
-    pub const fn add(&self, rhs: &Fp) -> Fp {
+    #[cfg(not(target_os = "zkvm"))]
+    pub fn add(&self, rhs: &Fp) -> Fp {
         let (d0, carry) = adc(self.0[0], rhs.0[0], 0);
         let (d1, carry) = adc(self.0[1], rhs.0[1], carry);
         let (d2, carry) = adc(self.0[2], rhs.0[2], carry);
@@ -399,6 +445,17 @@ impl Fp {
         // Attempt to subtract the modulus, to ensure the value
         // is smaller than the modulus.
         (&Fp([d0, d1, d2, d3, d4, d5])).subtract_p()
+    }
+
+    #[cfg(target_os = "zkvm")]
+    pub fn add(&self, rhs: &Fp) -> Fp {
+        let mut result: [u32; 12] = [0; 12];
+        unsafe {
+            let lhs = transmute::<&[u64; 6], &[u32; 12]>(&self.0);
+            let rhs = transmute::<&[u64; 6], &[u32; 12]>(&rhs.0);
+            bls12381_sys_bigint(&mut result, 1, lhs, rhs);
+            Fp::from_raw_unchecked(*transmute::<&mut [u32; 12], &mut [u64; 6]>(&mut result))
+        }
     }
 
     #[inline]
@@ -429,7 +486,7 @@ impl Fp {
 
     #[inline]
     /// Squares this element.
-    pub const fn sub(&self, rhs: &Fp) -> Fp {
+    pub fn sub(&self, rhs: &Fp) -> Fp {
         (&rhs.neg()).add(self)
     }
 
@@ -438,6 +495,7 @@ impl Fp {
     /// Implements Algorithm 2 from Patrick Longa's
     /// [ePrint 2022-367](https://eprint.iacr.org/2022/367) §3.
     #[inline]
+    #[cfg(not(target_os = "zkvm"))] // This is slow in zkvm
     pub(crate) fn sum_of_products<const T: usize>(a: [Fp; T], b: [Fp; T]) -> Fp {
         // For a single `a x b` multiplication, operand scanning (schoolbook) takes each
         // limb of `a` in turn, and multiplies it by all of the limbs of `b` to compute
@@ -574,7 +632,8 @@ impl Fp {
 
     #[inline]
     /// Multiplies two field elements, returning the result in the Montgomery domain.
-    pub const fn mul(&self, rhs: &Fp) -> Fp {
+    #[cfg(not(target_os = "zkvm"))]
+    pub fn mul(&self, rhs: &Fp) -> Fp {
         let (t0, carry) = mac(0, self.0[0], rhs.0[0], 0);
         let (t1, carry) = mac(0, self.0[0], rhs.0[1], carry);
         let (t2, carry) = mac(0, self.0[0], rhs.0[2], carry);
@@ -620,9 +679,25 @@ impl Fp {
         Self::montgomery_reduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11)
     }
 
+    /// Multiplies two field elements, returning the result in the Montgomery domain.
+    #[cfg(target_os = "zkvm")]
+    pub fn mul(&self, rhs: &Fp) -> Fp {
+        let mut result: [u32; 12] = [0; 12];
+        unsafe {
+            let r_inv = transmute::<&[u64; 6], &[u32; 12]>(&R_INV);
+
+            let lhs = transmute::<&[u64; 6], &[u32; 12]>(&self.0);
+            let rhs = transmute::<&[u64; 6], &[u32; 12]>(&rhs.0);
+            bls12381_sys_bigint(&mut result, 0, lhs, rhs);
+            bls12381_sys_bigint(&mut result, 0, &result, r_inv);
+            Fp::from_raw_unchecked(*transmute::<&mut [u32; 12], &mut [u64; 6]>(&mut result))
+        }
+    }
+
     /// Squares this element.
     #[inline]
-    pub const fn square(&self) -> Self {
+    #[cfg(not(target_os = "zkvm"))]
+    pub fn square(&self) -> Self {
         let (t1, carry) = mac(0, self.0[0], self.0[1], 0);
         let (t2, carry) = mac(0, self.0[0], self.0[2], carry);
         let (t3, carry) = mac(0, self.0[0], self.0[3], carry);
@@ -669,6 +744,12 @@ impl Fp {
         let (t11, _) = adc(t11, 0, carry);
 
         Self::montgomery_reduce(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11)
+    }
+
+    /// Squares this element.
+    #[cfg(target_os = "zkvm")]
+    pub fn square(&self) -> Self {
+        self * self
     }
 }
 
