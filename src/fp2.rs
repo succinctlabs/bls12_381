@@ -257,7 +257,7 @@ impl Fp2 {
     }
 
     /// Adds another element to this element.
-    pub const fn add(&self, rhs: &Fp2) -> Fp2 {
+    pub fn add(&self, rhs: &Fp2) -> Fp2 {
         Fp2 {
             c0: (&self.c0).add(&rhs.c0),
             c1: (&self.c1).add(&rhs.c1),
@@ -265,7 +265,7 @@ impl Fp2 {
     }
 
     /// Subtracts another element from this element.
-    pub const fn sub(&self, rhs: &Fp2) -> Fp2 {
+    pub fn sub(&self, rhs: &Fp2) -> Fp2 {
         Fp2 {
             c0: (&self.c0).sub(&rhs.c0),
             c1: (&self.c1).sub(&rhs.c1),

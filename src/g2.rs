@@ -193,8 +193,6 @@ const B: Fp2 = Fp2 {
     ]),
 };
 
-const B3: Fp2 = Fp2::add(&Fp2::add(&B, &B), &B);
-
 impl G2Affine {
     /// Builds a new element of $\mathbb{G}_2$ from raw coordinates.
     pub fn new_unsafe(x: Fp2, y: Fp2, infinity: Choice) -> Self {
@@ -652,7 +650,7 @@ impl_binops_multiplicative_mixed!(Scalar, G2Projective, G2Projective);
 
 #[inline(always)]
 fn mul_by_3b(x: Fp2) -> Fp2 {
-    x * B3
+    x * Fp2::add(&Fp2::add(&B, &B), &B)
 }
 
 impl G2Projective {

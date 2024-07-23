@@ -209,11 +209,6 @@ cfg_if::cfg_if! {
 impl_binops_additive!(Fp, Fp);
 
 impl Fp {
-    /// Builds an element of `Fp` from little-endian limbs.
-    pub fn new_unsafe(limbs: [u64; 6]) -> Self {
-        Fp(limbs)
-    }
-
     /// Returns zero, the additive identity.
     #[inline]
     pub const fn zero() -> Fp {
@@ -438,7 +433,8 @@ impl Fp {
 
     #[inline]
     /// Add two field elements together.
-    pub const fn add(&self, rhs: &Fp) -> Fp {
+    #[cfg(not(target_os = "zkvm"))]
+    pub fn add(&self, rhs: &Fp) -> Fp {
         let (d0, carry) = adc(self.0[0], rhs.0[0], 0);
         let (d1, carry) = adc(self.0[1], rhs.0[1], carry);
         let (d2, carry) = adc(self.0[2], rhs.0[2], carry);
@@ -449,6 +445,17 @@ impl Fp {
         // Attempt to subtract the modulus, to ensure the value
         // is smaller than the modulus.
         (&Fp([d0, d1, d2, d3, d4, d5])).subtract_p()
+    }
+
+    #[cfg(target_os = "zkvm")]
+    pub fn add(&self, rhs: &Fp) -> Fp {
+        let mut result: [u32; 12] = [0; 12];
+        unsafe {
+            let lhs = transmute::<&[u64; 6], &[u32; 12]>(&self.0);
+            let rhs = transmute::<&[u64; 6], &[u32; 12]>(&rhs.0);
+            bls12381_sys_bigint(&mut result, 1, lhs, rhs);
+            Fp::from_raw_unchecked(*transmute::<&mut [u32; 12], &mut [u64; 6]>(&mut result))
+        }
     }
 
     #[inline]
@@ -479,7 +486,7 @@ impl Fp {
 
     #[inline]
     /// Squares this element.
-    pub const fn sub(&self, rhs: &Fp) -> Fp {
+    pub fn sub(&self, rhs: &Fp) -> Fp {
         (&rhs.neg()).add(self)
     }
 
@@ -683,7 +690,7 @@ impl Fp {
             let rhs = transmute::<&[u64; 6], &[u32; 12]>(&rhs.0);
             bls12381_sys_bigint(&mut result, 0, lhs, rhs);
             bls12381_sys_bigint(&mut result, 0, &result, r_inv);
-            Fp::new_unsafe(*transmute::<&mut [u32; 12], &mut [u64; 6]>(&mut result))
+            Fp::from_raw_unchecked(*transmute::<&mut [u32; 12], &mut [u64; 6]>(&mut result))
         }
     }
 
